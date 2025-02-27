@@ -51,6 +51,7 @@ const ChatContainer = () => {
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
+        
         const isSender = message.senderId?._id === authUser._id;
         const senderName = isSender
           ? "You"

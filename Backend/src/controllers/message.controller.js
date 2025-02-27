@@ -95,7 +95,6 @@ export const getMessages = async (req, res) => {
   }
 };
 
-
 export const sendMessage = async (req, res) => {
   try {
     console.log("📩 sendMessage triggered once");
@@ -113,31 +112,35 @@ export const sendMessage = async (req, res) => {
       imageUrl = uploadResponse.secure_url;
     }
 
-    const newMessage = new Message({
+    // Save new message
+    const newMessage = await new Message({
       senderId,
-      receiverId: groupId ? null : receiverId || null, // ✅ Ensure receiverId is explicitly set to null
-      groupId: groupId || null, // ✅ Ensure groupId is explicitly set to null
+      receiverId: groupId ? null : receiverId || null,
+      groupId: groupId || null,
       text,
-      image: imageUrl || null, // ✅ Ensure image is explicitly set to null
+      image: imageUrl || null,
       messageType,
-    });
-    
-    
-    await newMessage.save();
+    }).save();
+
+    // Populate sender details
+    const populatedMessage = await Message.findById(newMessage._id).populate(
+      "senderId",
+      "fullName profilePic"
+    );
 
     // Emit message only once
     if (groupId) {
       console.log("📢 Emitting group message");
-      io.to(groupId).emit("groupMessage", newMessage);
+      io.to(groupId).emit("groupMessage", populatedMessage);
     } else {
       const receiverSocketId = getReceiverSocketId(receiverId);
       if (receiverSocketId) {
         console.log("📢 Emitting direct message");
-        io.to(receiverSocketId).emit("newMessage", newMessage);
+        io.to(receiverSocketId).emit("newMessage", populatedMessage);
       }
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(populatedMessage);
   } catch (error) {
     console.error("❌ Error in sendMessage:", error);
     res.status(500).json({ error: "Internal server error" });

@@ -78,7 +78,7 @@ io.on("connection", (socket) => {
         .populate("senderId", "fullName profilePic")
         .sort({ createdAt: 1 }); // Sort messages by oldest first
   
-      console.log("📨 Sending group messages:", messages);
+      console.log("📨 Sending group messages:");
   
       // Send messages back to the requesting client
       socket.emit("receiveGroupMessages", { groupId, messages });

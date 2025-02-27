@@ -67,7 +67,6 @@ export const useChatStore = create((set, get) => ({
         groupId: selectedGroup?._id || null,
         receiverId: selectedUser?._id || null,
       };
-      console.log(get().selectedUser);
       
       const res = await axiosInstance.post(`/messages/send`, payload);
       set({ messages: [...messages, res.data] });
@@ -77,24 +76,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   // ✅ Subscribe to real-time updates for DMs & Groups
-  subscribeToMessages: () => {
-    const { selectedUser, selectedGroup } = get();
-    const socket = useAuthStore.getState().socket;
-    
-    if (selectedUser) {
-      socket.on("newMessage", (newMessage) => {
-        if (newMessage.senderId === selectedUser._id) {
-          set({ messages: [...get().messages, newMessage] });
-        }
-      });
-    } else if (selectedGroup) {
-      socket.on("groupMessage", (newGroupMessage) => {
-        if (newGroupMessage.groupId === selectedGroup._id) {
-          set({ messages: [...get().messages, newGroupMessage] });
-        }
-      });
-    }
-  },
+  
 
   // ✅ Unsubscribe from messages
   unsubscribeFromMessages: () => {
@@ -117,7 +99,28 @@ export const useChatStore = create((set, get) => ({
       set({ messages, isMessagesLoading: false });
     });
   },
-
+  subscribeToMessages: () => {
+    const { selectedUser, selectedGroup } = get();
+    const socket = useAuthStore.getState().socket;
+    
+    if (selectedUser) {
+      socket.on("newMessage", (newMessage) => {
+        console.log("New message");
+        
+        if (newMessage.senderId === selectedUser._id) {
+          set({ messages: [...get().messages, newMessage] });
+        }
+      });
+    } else if (selectedGroup) {
+      socket.on("groupMessage", (newGroupMessage) => {
+        console.log("From subscribe to group"+newGroupMessage);
+        
+        if (newGroupMessage.groupId === selectedGroup._id) {
+          set({ messages: [...get().messages, newGroupMessage] });
+        }
+      });
+    }
+  },
   // ✅ Subscribe to new messages in real-time
   subscribeToMessagesGroup: () => {
     const { selectedGroup } = get();
