@@ -103,24 +103,35 @@ export const useChatStore = create((set, get) => ({
     const { selectedUser, selectedGroup } = get();
     const socket = useAuthStore.getState().socket;
     
-    if (selectedUser) {
-      socket.on("newMessage", (newMessage) => {
-        console.log("New message");
-        
-        if (newMessage.senderId === selectedUser._id) {
-          set({ messages: [...get().messages, newMessage] });
-        }
-      });
-    } else if (selectedGroup) {
-      socket.on("groupMessage", (newGroupMessage) => {
-        console.log("From subscribe to group"+newGroupMessage);
-        
-        if (newGroupMessage.groupId === selectedGroup._id) {
-          set({ messages: [...get().messages, newGroupMessage] });
-        }
-      });
-    }
-  },
+    if (!socket) return;
+    
+    console.log("👂 Setting up socket listeners...");
+  
+    // Clear previous listeners before adding new ones
+    socket.off("newMessage");
+    socket.off("groupMessage");
+  
+    // ✅ Listen for direct messages
+    socket.on("newMessage", (newMessage) => {
+      console.log("📩 Received Direct Message:", newMessage);
+      
+      if (selectedUser && newMessage.senderId?._id === selectedUser._id) {
+        set({ messages: [...get().messages, newMessage] });
+      }
+    });
+  
+    // ✅ Listen for group messages
+    socket.on("groupMessage", (newGroupMessage) => {
+      console.log("📢 Received Group Message:", newGroupMessage);
+      
+      if (selectedGroup && newGroupMessage.groupId === selectedGroup._id) {
+        set({ messages: [...get().messages, newGroupMessage] });
+      }
+    });
+  
+    console.log("✅ Listeners are set!");
+  },  
+  
   // ✅ Subscribe to new messages in real-time
   subscribeToMessagesGroup: () => {
     const { selectedGroup } = get();
