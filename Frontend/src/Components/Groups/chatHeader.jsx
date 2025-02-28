@@ -65,7 +65,7 @@ const GroupChatHeader = () => {
       {showDropdown && (
         <div className="absolute left-0 top-12 w-60 bg-white shadow-lg border rounded-md p-2 z-10">
           <div className="flex justify-between items-center mb-1 px-2">
-            <p className="text-xs text-gray-500">Group Members</p>
+            
             {/* Close Dropdown Button */}
             <button onClick={() => setShowDropdown(false)}>
               <X size={16} className="text-gray-500 hover:text-gray-700" />
@@ -74,9 +74,9 @@ const GroupChatHeader = () => {
 
           {/* Show Group Description */}
           {groupDescription && (
-            <p className="text-sm px-2 text-gray-700 mb-2 italic">Description:{groupDescription}</p>
+            <p className="text-sm px-2 text-gray-700 mb-2 italic">Description: {groupDescription}</p>
           )}
-
+          <p className="text-xs text-gray-500">Group Members</p>
           {/* List Members */}
           <ul className="max-h-60 overflow-y-auto">
             {members.length > 0 ? (

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import useGroupStore from "../../store/groupStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import GroupChatHeader from "./chatHeader";
@@ -6,27 +6,35 @@ import MessageInput from "./groupMessageInput";
 import MessageSkeleton from "../skeletons/MessageSkeleton";
 import { formatMessageTime } from "../../lib/utils";
 import { useChatStore } from "../../store/useChatStore";
-const GroupChatContainer = () => {
 
-  const {getGroupMessages,subscribeToMessagesGroup,unsubscribeFromMessagesGroup,setSelectedGroup,selectedGroup,
+const GroupChatContainer = () => {
+  const {
+    getGroupMessages,
+    subscribeToMessagesGroup,
+    unsubscribeFromMessagesGroup,
+    selectedGroup,
     messages,
-    isMessagesLoading,}= useChatStore();
+    isMessagesLoading,
+  } = useChatStore();
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
+  // ✅ Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1); // Current match index
+
   // ✅ Fetch messages via Socket.IO when group changes
   useEffect(() => {
     if (selectedGroup?._id) {
-      getGroupMessages(selectedGroup._id); // Fetch messages
-   
-      
-      subscribeToMessagesGroup(selectedGroup._id); // Subscribe to updates
+      getGroupMessages(selectedGroup._id);
+      subscribeToMessagesGroup(selectedGroup._id);
     }
 
     return () => {
       if (selectedGroup?._id) {
-        unsubscribeFromMessagesGroup(selectedGroup._id); // Cleanup on unmount
+        unsubscribeFromMessagesGroup(selectedGroup._id);
       }
     };
   }, [selectedGroup]);
@@ -37,6 +45,49 @@ const GroupChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // ✅ Filter messages based on search query
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([]);
+      setCurrentIndex(-1);
+      return;
+    }
+
+    const results = messages
+      .map((message, index) =>
+        message?.text?.toLowerCase().includes(searchQuery.toLowerCase()) ? index : null
+      )
+      .filter((index) => index !== null);
+
+    setSearchResults(results);
+    setCurrentIndex(results.length > 0 ? 0 : -1); // Start from the first match
+  }, [searchQuery, messages]);
+
+  // ✅ Scroll to the currently highlighted message
+  useEffect(() => {
+    if (currentIndex !== -1 && searchResults.length > 0) {
+      const element = document.getElementById(`message-${searchResults[currentIndex]}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [currentIndex]);
+
+  // ✅ Navigate search results
+  const goToNextMatch = () => {
+    if (searchResults.length > 0) {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % searchResults.length);
+    }
+  };
+
+  const goToPreviousMatch = () => {
+    if (searchResults.length > 0) {
+      setCurrentIndex((prevIndex) =>
+        prevIndex === 0 ? searchResults.length - 1 : prevIndex - 1
+      );
+    }
+  };
 
   // ✅ Show loading state
   if (isMessagesLoading) {
@@ -58,24 +109,47 @@ const GroupChatContainer = () => {
     );
   }
 
-  // ✅ Get messages for the selected group
-  // const groupMessages = messages[selectedGroup._id] || [];
-  // console.log(`Messages for group ${selectedGroup._id}:`, groupMessages);
-
   return (
     <div className="flex-1 flex flex-col overflow-auto">
       {/* Chat Header */}
       <GroupChatHeader />
 
+      {/* Search Input & Controls */}
+      <div className="p- flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="Search messages..."
+          className="w-full p-2 border rounded-md"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button className="p-2 bg-gray-300 rounded-md" onClick={() => setSearchQuery("")}>
+            ❌
+          </button>
+        )}
+        {searchResults.length > 0 && (
+          <>
+            <button className="p-2 bg-gray-300 rounded-md" onClick={goToPreviousMatch}>
+              ⬆️
+            </button>
+            <button className="p-2 bg-gray-300 rounded-md" onClick={goToNextMatch}>
+              ⬇️
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Messages List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length > 0 ? (
-          messages.map((message) => (
+          messages.map((message, index) => (
             <div
-              key={message?._id || Math.random()} // ✅ Fallback key
+              key={message?._id || index}
+              id={`message-${index}`}
               className={`chat ${
                 message?.senderId?._id === authUser._id ? "chat-end" : "chat-start"
-              }`}
+              } ${currentIndex !== -1 && searchResults[currentIndex] === index ? "bg-yellow-200" : ""}`}
             >
               {/* Sender Avatar */}
               <div className="chat-image avatar">
@@ -110,7 +184,26 @@ const GroupChatContainer = () => {
                     className="sm:max-w-[200px] rounded-md mb-2"
                   />
                 )}
-                {message?.text && <p>{message.text}</p>}
+                {message?.text && (
+                  <p>
+                    {/* Highlight searched text */}
+                    {searchQuery ? (
+                      <>
+                        {message.text.split(new RegExp(`(${searchQuery})`, "gi")).map((part, i) =>
+                          part.toLowerCase() === searchQuery.toLowerCase() ? (
+                            <span key={i} className="bg-yellow-300">
+                              {part}
+                            </span>
+                          ) : (
+                            part
+                          )
+                        )}
+                      </>
+                    ) : (
+                      message.text
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           ))

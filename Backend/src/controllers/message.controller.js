@@ -63,7 +63,7 @@ export const getMessages = async (req, res) => {
     const myId = req.user._id;
     const { type } = req.query;
 
-    console.log("Type:", type, "Chat ID:", chatId); // Debugging
+    // console.log("Type:", type, "Chat ID:", chatId); 
 
     if (!type || !chatId) {
       return res.status(400).json({ error: "Missing required parameters" });
@@ -130,12 +130,12 @@ export const sendMessage = async (req, res) => {
 
     // Emit message only once
     if (groupId) {
-      console.log("📢 Emitting group message");
+      // console.log("📢 Emitting group message");
       io.to(groupId).emit("groupMessage", populatedMessage);
     } else {
       const receiverSocketId = getReceiverSocketId(receiverId);
       if (receiverSocketId) {
-        console.log("📢 Emitting direct message");
+        // console.log("📢 Emitting direct message");
         io.to(receiverSocketId).emit("newMessage", populatedMessage);
       }
     }

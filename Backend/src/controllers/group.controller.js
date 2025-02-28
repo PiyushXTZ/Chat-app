@@ -146,7 +146,6 @@ export const getGroupMessages = async (req, res) => {
     
     const messages = await Message.find({ groupId }) // Use groupId (not group)
       .populate("senderId", "fullName profilePic");
-console.log(messages);
 
     if (!messages.length) {
       return res.status(404).json({ message: "No messages found for this group." });
