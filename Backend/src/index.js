@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "*"], // Replace with your local IP
+    origin:["http://localhost:5173"], // Replace with your local IP
     credentials: true,
   })
 );
